@@ -76,6 +76,9 @@ type Model struct {
 type HTTPOptions struct {
 	Client  *http.Client
 	Headers http.Header
+	// MaxRetries overrides the SDK client's retry budget. Nil preserves the
+	// default (2); pointer to 0 disables retries; negatives are clamped to 0.
+	MaxRetries *int
 }
 
 // Config holds the configuration for creating an OpenAI Model.
@@ -136,6 +139,13 @@ func New(cfg Config) *Model {
 	}
 	if cfg.HTTPOptions.Client != nil {
 		opts = append(opts, option.WithHTTPClient(cfg.HTTPOptions.Client))
+	}
+	if cfg.HTTPOptions.MaxRetries != nil {
+		retries := *cfg.HTTPOptions.MaxRetries
+		if retries < 0 {
+			retries = 0
+		}
+		opts = append(opts, option.WithMaxRetries(retries))
 	}
 	for k, vals := range cfg.HTTPOptions.Headers {
 		for _, v := range vals {
