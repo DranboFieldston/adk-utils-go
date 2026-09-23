@@ -394,22 +394,6 @@ fabricates input. It is the caller's responsibility not to end on an assistant
 turn unless the target model supports prefill. Note `repairMessageHistory` can
 leave a history ending in assistant (after dropping a trailing orphan tool_use);
 that is the most likely way to hit this. Observed on `claude-sonnet-4-6`.
-
-### O1 - HTTPOptions.MaxRetries is an opt-in override of the SDK retry budget
-
-The SDK client (openai-go) defaults to `MaxRetries: 2`, which is invisible to
-callers using this adapter: a slow backend that times out once gets retried
-twice more against the same slow request, multiplying load instead of
-succeeding or failing fast. We expose a `*int` on HTTPOptions so callers can
-opt in to a different budget without re-implementing the client.
-
-- **Decision:** nil preserves the SDK default (2); a pointer to 0 disables
-  retries (single attempt); negative values are clamped to 0 because
-  `option.WithMaxRetries` panics on negatives.
-- **Why pointer-to-int, not plain int:** the zero value of an `int` is `0`,
-  which means "disable retries" - a real and distinct contract from "use the
-  default". A pointer distinguishes unset from the zero value without
-  requiring a sentinel constant.
 - **Why we don't expose a TimeoutSeconds analog here:** the SDK accepts a
   custom `*http.Client`, so callers who need a custom timeout already pass
   one via `HTTPOptions.Client`. There is no parallel hidden default to
